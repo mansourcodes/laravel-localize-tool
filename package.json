@@ -28,6 +28,9 @@
     "type": "git",
     "url": "https://github.com/mansourcodes/laravel-localize-tool.git"
   },
+  "activationEvents": [
+    "onCommand:laravel-easy-localize.helloWorld"
+  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
