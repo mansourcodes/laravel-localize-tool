@@ -228,12 +228,14 @@ function addNewTranslation(
 function getLocalizationDirective(wordKey: string | undefined): string {
   const currentFileType = vscode.window.activeTextEditor?.document.languageId;
   const configs = vscode.workspace.getConfiguration('laravel-localize-tool');
+  let parentKey = configs.get('targetFileName');
+  parentKey = String(parentKey).toLowerCase();
 
   if (currentFileType === 'blade') {
-    return `{{ __('${configs.get('targetFileName')}.${wordKey}') }}`;
+    return `{{ __('${parentKey}.${wordKey}') }}`;
   }
 
-  return `__('${configs.get('targetFileName')}.${wordKey}')`;
+  return `__('${parentKey}.${wordKey}')`;
 }
 
 /**
