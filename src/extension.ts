@@ -2,184 +2,274 @@
 import * as vscode from 'vscode';
 // The module 'fs' contains the Node JS File System API
 import * as fs from 'node:fs';
+// import path
+import * as path from 'node:path';
 
-// this method is called when the extension is activated
-// the extension is activated the very first time the command is executed
+/**
+ * Activates the extension.
+ *
+ * @param {vscode.ExtensionContext} context - The context of the extension.
+ * @return {void} This function does not return anything.
+ */
 export function activate(context: vscode.ExtensionContext) {
+  let disposable = vscode.commands.registerCommand(
+    'laravel-localize-tool.localize',
+    async () => {
+      const configs = vscode.workspace.getConfiguration('laravel-localize-tool');
+      const wsPath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
+      const editor = vscode.window.activeTextEditor;
 
-	// This line of code will only be executed once when your extension is activated
-	console.log('extension "laravel-easy-localize" is now active!');
+      if (editor) {
+        const document = editor.document;
+        const selection = editor.selection;
+        const selectedText = document.getText(selection);
 
-	// The command has been defined in the package.json file
-	// implementation of the command with registerCommand
-	// The commandId parameter matches the command field in package.json
-	let disposable = vscode.commands.registerCommand('laravel-easy-localize.localize', async () => {
-		// The code here will be executed every time the registered command is executed
+        if (selectedText) {
+          const wordKey = await getKeyInputFromUser(selectedText);
+          const wordTrans = await getArrayValueInputFromUser();
+          const targetPath = prepareFileDir(wsPath, configs.get('targetPath'));
+          const originalPath = prepareFileDir(wsPath, configs.get('originalPath'));
 
-		// get the localize of the first workspace folder.
-		const wsPath = vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-		// get the current active editor.
-	 	const editor = vscode.window.activeTextEditor;
+          if (!wordTrans) {
+            vscode.window.showInformationMessage('Translation not given!');
+          } else {
+            let is_translated_flag = false;
+            let fileContent = readFileContent(originalPath);
+            if (keyExists(fileContent, wordKey)) {
+              vscode.window.showInformationMessage(
+                'Translation already exist on original!'
+              );
+            } else {
+              is_translated_flag = true;
+              addNewTranslation(
+                fileContent,
+                originalPath,
+                wordKey,
+                cleanText(selectedText)
+              );
+            }
 
-		if (editor) {
-			// get the document object associated with text editor.
-			const document = editor.document;
-			// get user's text selection object.
-			const selection = editor.selection;
+            fileContent = readFileContent(targetPath);
+            if (keyExists(fileContent, wordKey)) {
+              vscode.window.showInformationMessage(
+                'Translation already exist on target!'
+              );
+            } else {
+              is_translated_flag = true;
+              addNewTranslation(fileContent, targetPath, wordKey, wordTrans);
+            }
 
-			// get the text within the selection object.
-			const word = document.getText(selection);
+            if (is_translated_flag) {
+              vscode.window.showInformationMessage('Translation Added!');
+            }
 
-			if (word) {
+            // replace text with the directive @lang()
+            const directive = getLocalizationDirective(wordKey);
+            editor.edit((editBuilder) => {
+              editBuilder.replace(selection, directive);
+            });
+            const saved = await document.save();
 
-				const arrayKey = await getArrayKeyInputFromUser();
-				const localizeFilePath = prepareFileDir(wsPath);
-				const fileContent = readFileContent(localizeFilePath);
+            if (!saved) {
+              vscode.window.showInformationMessage("couldn't save localize.php file.");
+            }
+          }
+        } else {
+          vscode.window.showInformationMessage('No Text Selected!');
+        }
+      }
+    }
+  );
 
-				if (arrayKey) {
-					if (!keyExists(fileContent, arrayKey)) {
-	
-						if (addNewTranslation(fileContent, localizeFilePath, arrayKey, word)) {
-	
-							const directive = getLocalizationDirective(arrayKey);
-		
-							editor.edit(editBuilder => {
-								editBuilder.replace(selection, directive);
-							});
-							
-							vscode.window.showInformationMessage('Translation Added !');
-	
-							const saved = await document.save();
-		
-							if (!saved) {
-								vscode.window.showInformationMessage("couldn't save localize.php file.");
-							}
-						}
-					}
-				}
-
-			} else {
-				vscode.window.showInformationMessage('No Text Selected !');
-			}
-		}
-	});
-
-	context.subscriptions.push(disposable);
+  context.subscriptions.push(disposable);
 }
 
-// get localization array key from user
-async function getArrayKeyInputFromUser(): Promise<string | undefined> {
-	const result = await vscode.window.showInputBox({
-		value: '',
-		placeHolder: 'Localization Key, For example: welcome_header',
-		ignoreFocusOut: true,
-		validateInput: text => {
-			return text ? null : 'array key is required !';
-		},
-
-	});
-
-	return result;
+/**
+ * Converts a given text to snake case.
+ *
+ * @param {string} text - The text to be converted.
+ * @return {string} The converted text in snake case.
+ */
+function toSnakeCase(text: string) {
+  return text.replace(/\s+/g, '_').toLowerCase();
 }
 
-// make '/resources/ar/localize.php' directory if doesn't exists & open file for appending
-function prepareFileDir(wsPath: string | undefined): string {
-
-	const configs = vscode.workspace.getConfiguration('laravel-easy-localize');
-	const arabicDir = wsPath + `\\resources\\lang\\${configs.get('languageFolder')}`;
-	const localizeFilePath = arabicDir + `\\${configs.get('targetFileName')}.php`;
-
-	try {
-		fs.mkdirSync(arabicDir, { recursive: true });
-		fs.openSync(localizeFilePath, 'a');
-
-
-		return localizeFilePath;
-
-	} catch (e: any) {
-		vscode.window.showErrorMessage("couldn't create new directory !");
-		vscode.window.showErrorMessage(e.message);
-
-		throw (e);
-	}
+function cleanText(text: string) {
+  return text.replace(/['"`]/g, '');
 }
 
-// read from '/resources/ar/localize.php' file if exists & check if valid 
+/**
+ * Retrieves a key input from the user for translation purposes.
+ *
+ * @param {string} selectedText - The word to be converted to snake case.
+ * @return {Promise<string | undefined>} The translation key entered by the user, or undefined if no input was provided.
+ */
+async function getKeyInputFromUser(selectedText: string): Promise<string | undefined> {
+  const wordKey = toSnakeCase(cleanText(selectedText));
+
+  const result = await vscode.window.showInputBox({
+    value: wordKey,
+    placeHolder: 'Target Translation Key',
+    ignoreFocusOut: true,
+    validateInput: (text) => {
+      return text ? null : 'Key is required !';
+    },
+  });
+
+  return result;
+}
+
+/**
+ * Retrieves an array value input from the user.
+ *
+ * @return {Promise<string | undefined>} The target translation value input by the user, or undefined if no value is provided.
+ */
+async function getArrayValueInputFromUser(): Promise<string | undefined> {
+  const result = await vscode.window.showInputBox({
+    value: '',
+    placeHolder: 'Target Translation Value, ex: مرحبا',
+    ignoreFocusOut: true,
+    validateInput: (text) => {
+      return text ? null : 'array value is required !';
+    },
+  });
+
+  return result;
+}
+
+/**
+ * Prepares the file directory for the given workspace path and language folder.
+ *
+ * @param {string | undefined} wsPath - The workspace path.
+ * @param {string} languagePathFolder - The language folder.
+ * @return {string} The localized file path.
+ */
+function prepareFileDir(wsPath: string | undefined, languagePathFolder?: string): string {
+  const configs = vscode.workspace.getConfiguration('laravel-localize-tool');
+  const relativePath = wsPath + `` + languagePathFolder;
+  let localizeFilePath = relativePath + `${configs.get('targetFileName')}.php`;
+  localizeFilePath = path.normalize(localizeFilePath);
+
+  try {
+    fs.mkdirSync(relativePath, { recursive: true });
+    fs.openSync(localizeFilePath, 'a');
+
+    return localizeFilePath;
+  } catch (e: any) {
+    vscode.window.showErrorMessage("couldn't create new directory !");
+    vscode.window.showErrorMessage(e.message);
+
+    throw e;
+  }
+}
+
+/**
+ * Reads the content of a file and returns it as an array of strings.
+ *
+ * @param {string} localizeFilePath - The path of the file to read.
+ * @return {Array<string>} The content of the file as an array of strings.
+ */
 function readFileContent(localizeFilePath: string): Array<string> {
-	try {
-		let resourceContent = fs.readFileSync(localizeFilePath, 'utf8');
+  try {
+    let resourceContent = fs.readFileSync(localizeFilePath, 'utf8');
 
-		if (!resourceContent || !validLangFile(resourceContent)) {
-			resourceContent = "<?php\n\n return [ \n];";
-		}
+    if (!resourceContent || !validLangFile(resourceContent)) {
+      resourceContent = '<?php\n\n return [ \n];';
+    }
 
-		const arrayContent = resourceContent.substring(resourceContent.indexOf('[') + 1, resourceContent.indexOf(']')).split(',');
+    const arrayContent = resourceContent
+      .substring(resourceContent.indexOf('[') + 1, resourceContent.indexOf(']'))
+      .split(',');
 
-		return arrayContent;
+    return arrayContent;
+  } catch (e: any) {
+    vscode.window.showErrorMessage("couldn't read file content");
+    vscode.window.showErrorMessage(e.message);
 
-	} catch (e: any) {
-		vscode.window.showErrorMessage("couldn't read file content");
-		vscode.window.showErrorMessage(e.message);
-
-		throw (e);
-	}
+    throw e;
+  }
 }
 
-// add new localization key to '/resources/ar/localize.php' 
-function addNewTranslation(content: Array<string>, localizeFilePath: string, arrayKey: string | undefined, arrayValue: string): boolean {
+/**
+ * Adds a new translation to the given content and writes it to the localize file path.
+ *
+ * @param {Array<string>} content - The original content of the localize file.
+ * @param {string} localizeFilePath - The path to the localize file.
+ * @param {string | undefined} wordKey - The key of the word to be translated.
+ * @param {string} wordTrans - The translated word.
+ * @return {boolean} Returns `true` if the translation was added and written successfully, `false` otherwise.
+ */
+function addNewTranslation(
+  content: Array<string>,
+  localizeFilePath: string,
+  wordKey: string | undefined,
+  wordTrans: string
+): boolean {
+  const result = content + `\t'${wordKey}' => '${wordTrans}',`;
 
-	const result = content + `\t'${arrayKey}' => '${arrayValue}',`;
-	
-	try {
-		fs.writeFileSync(localizeFilePath, "<?php\n\n return ["+result+"\n];");
+  try {
+    fs.writeFileSync(localizeFilePath, '<?php\n\n return [' + result + '\n];');
 
-		return true;
+    return true;
+  } catch (e: any) {
+    vscode.window.showErrorMessage("couldn't write file content !");
+    vscode.window.showErrorMessage(e.message);
 
-	} catch (e: any) {
-		vscode.window.showErrorMessage("couldn't write file content !");
-		vscode.window.showErrorMessage(e.message);
-				
-		return false;
-	}
+    return false;
+  }
 }
 
-// get the blade directive/php method to output after translation
-function getLocalizationDirective(arrayKey: string | undefined): string {
+/**
+ * Retrieves the localization directive for the given word key.
+ *
+ * @param {string | undefined} wordKey - The key of the word to be localized.
+ * @return {string} The localization directive.
+ */
+function getLocalizationDirective(wordKey: string | undefined): string {
+  const currentFileType = vscode.window.activeTextEditor?.document.languageId;
+  const configs = vscode.workspace.getConfiguration('laravel-localize-tool');
 
-	const currentFileType = vscode.window.activeTextEditor?.document.languageId;
-	const configs = vscode.workspace.getConfiguration('laravel-easy-localize');
-	
-	if (currentFileType === 'blade') {
-		return `@lang('${configs.get('targetFileName')}.${arrayKey}')`;
-	}
+  if (currentFileType === 'blade') {
+    return `{{ __('${configs.get('targetFileName')}.${wordKey}') }}`;
+  }
 
-	return `__('${configs.get('targetFileName')}.${arrayKey}')`;
+  return `__('${configs.get('targetFileName')}.${wordKey}')`;
 }
 
-// check if localization array key already exists
+/**
+ * Checks if a given key exists in an array.
+ *
+ * @param {Array<string>} array - The array to search for the key.
+ * @param {string} [key=''] - The key to search for in the array.
+ * @returns {boolean} - Returns true if the key exists in the array, otherwise returns false.
+ */
 function keyExists(array: Array<string>, key: string = ''): boolean {
+  if (key && array.find((k) => k.includes(`${key}`))) {
+    vscode.window.showInformationMessage(`'${key}' already exists !`);
 
-	if (key && array.find(k => k.includes(`${key}`))) {
-		vscode.window.showInformationMessage(`'${key}' already exists !`);
+    return true;
+  }
 
-		return true;
-	}
-
-	return false;
+  return false;
 }
 
-// check if '/resources/ar/localize.php' is a valid lang file
+/**
+ * Checks if the given content is a valid language file.
+ *
+ * @param {string} content - The content of the file.
+ * @return {boolean} Returns true if the content is a valid language file, false otherwise.
+ */
 function validLangFile(content: string): boolean {
-	if(content) {
-		let valid = content.includes('<?php') && content.includes('return [') && content.includes('];');
+  if (content) {
+    let valid =
+      content.includes('<?php') && content.includes('return [') && content.includes(']');
 
-		if(valid) {
-			return true;
-		}
-	}
+    if (valid) {
+      return true;
+    }
+  }
 
-	return false;
+  return false;
 }
 
-// this method is called when your extension is deactivated
-export function deactivate() { }
+export function deactivate() {}

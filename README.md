@@ -1,25 +1,24 @@
 <h1 align="center">
   <br>
-  <a href="https://marketplace.visualstudio.com/items?itemName=moatazHajres.laravel-easy-localize">
-    <img src="./resources/logo_icon.png" width="100" height="100">
+  <a href="https://marketplace.visualstudio.com/items?itemName=mansourcodes.laravel-localize-tool">
+    <img src="./resources/ex_logo.png" width="100" height="100">
   </a>
   <br>
-    Laravel Easy Localize
+    Laravel Localize Tool
   <br>
 </h1>
-
 
 a VS Code Extension for Easily Localize any blade/php text in any Laravel project.
 
 <p align="center">
-  <a href="https://marketplace.visualstudio.com/items?itemName=moatazHajres.laravel-easy-localize">
-    <img src="https://badgen.net/vs-marketplace/v/moatazHajres.laravel-easy-localize" alt="Version">
+  <a href="https://marketplace.visualstudio.com/items?itemName=mansourcodes.laravel-localize-tool">
+    <img src="https://badgen.net/vs-marketplace/v/mansourcodes.laravel-localize-tool" alt="Version">
   </a>
-  <a href="https://marketplace.visualstudio.com/items?itemName=moatazHajres.laravel-easy-localize">
-    <img src="https://badgen.net/vs-marketplace/i/moatazHajres.laravel-easy-localize" alt="Installs">
+  <a href="https://marketplace.visualstudio.com/items?itemName=mansourcodes.laravel-localize-tool">
+    <img src="https://badgen.net/vs-marketplace/i/mansourcodes.laravel-localize-tool" alt="Installs">
   </a>
-  <a href="https://marketplace.visualstudio.com/items?itemName=moatazHajres.laravel-easy-localize">
-    <img src="https://badgen.net/vs-marketplace/rating/moatazHajres.laravel-easy-localize" alt="Ratings">
+  <a href="https://marketplace.visualstudio.com/items?itemName=mansourcodes.laravel-localize-tool">
+    <img src="https://badgen.net/vs-marketplace/rating/mansourcodes.laravel-localize-tool" alt="Ratings">
   </a>
 </p>
 
@@ -37,17 +36,17 @@ a VS Code Extension for Easily Localize any blade/php text in any Laravel projec
 
 ## Settings
 
-You may configure the following settings (`Settigs` -> `Extensions` -> `Laravel Eazy Localize`): 
+You may configure the following settings (`Settigs` -> `Extensions` -> `Laravel Eazy Localize`):
 
-* `Language Folder`: Lang Directory Folder to save translations to (`ar` by default).
-* `Target File Name`: Target Translation file name (`localize` by default).
+- `Language Folder`: Lang Directory Folder to save translations to (`ar` by default).
+- `Target File Name`: Target Translation file name (`localize` by default).
 
 ## Current Limitations & Future Work
 
 - ~~It only reads & writes to /resources/lang/ar/localize.php file, cannot select custom location~~ ✅.
 - No support for nested array keys (ex: key1.key2).
 - maybe replace .php lang files with JSON lang files which will help make lang file validation more accurate + easier to parse & write to.
-- prompt to user to select which lang file to write to with default option available if none is selected.  
+- prompt to user to select which lang file to write to with default option available if none is selected.
 - you tell me.
 
 ## Release Notes

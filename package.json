@@ -1,34 +1,38 @@
 {
-  "name": "laravel-easy-localize",
-  "displayName": "Laravel Easy Localize",
-  "description": "Easily localize any blade/php text in any laravel project.",
+  "name": "laravel-localize-tool",
+  "displayName": "Laravel Localize Tool",
+  "description": "Easily localize your laravel project.",
   "version": "1.1.2",
-  "publisher": "moatazHajres",
+  "publisher": "mansourcodes",
   "engines": {
     "vscode": "^1.71.0"
   },
   "author": {
-    "name": "Moataz Hajres"
+    "name": "Mansour Alnasser"
   },
-  "icon": "resources/logo_icon.png",
+  "icon": "resources/ex_logo.png",
   "categories": [
-    "Snippets",
     "Formatters",
+    "Snippets",
     "Other"
   ],
-  "keywords": ["laravel", "localization", "translation", "vscode-extension", "easy"],
+  "keywords": [
+    "Laravel",
+    "i18n",
+    "localization",
+    "translation",
+    "vscode-extension",
+    "tool"
+  ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/moatazHajres/laravel-easy-localize.git"
+    "url": "https://github.com/mansourcodes/laravel-localize-tool.git"
   },
-  "activationEvents": [
-    "onCommand:laravel-easy-localize.localize"
-  ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "laravel-easy-localize.localize",
+        "command": "laravel-localize-tool.localize",
         "title": "Laravel Localize"
       }
     ],
@@ -36,22 +40,27 @@
       "editor/context": [
         {
           "when": "editorHasSelection && resourceLangId == blade || resourceLangId == php",
-          "command": "laravel-easy-localize.localize"
+          "command": "laravel-localize-tool.localize"
         }
       ]
     },
     "configuration": {
-      "title": "Laravel Easy Localize",
+      "title": "Laravel Localize Tool",
       "properties": {
-        "laravel-easy-localize.languageFolder": {
+        "laravel-localize-tool.targetPath": {
           "type": "string",
-          "default": "ar",
-          "description": "Lang Directory Folder to save translations to (ex: ar, en, fr ...)"
+          "default": "/resources/lang/ar/",
+          "description": "Relative Path to Lang Directory (ex: /resources/lang/ch/)"
         },
-        "laravel-easy-localize.targetFileName": {
+        "laravel-localize-tool.targetFileName": {
           "type": "string",
           "default": "localize",
-          "description": "Target Translation file name."
+          "description": "Target PHP Translation file name. (Without .php extension)"
+        },
+        "laravel-localize-tool.originalPath": {
+          "type": "string",
+          "default": "/resources/lang/en/",
+          "description": "Current text will be replaced with this Relative Path to Lang Directory (ex: /resources/lang/en/)"
         }
       }
     }
