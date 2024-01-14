@@ -112,7 +112,7 @@ async function getKeyInputFromUser(selectedText: string): Promise<string | undef
     placeHolder: 'Target Translation Key',
     ignoreFocusOut: true,
     validateInput: (text) => {
-      return text ? null : 'Key is required !';
+      return text.trim() ? null : 'Key is required !';
     },
   });
 
@@ -246,7 +246,7 @@ function getLocalizationDirective(wordKey: string | undefined): string {
  * @returns {boolean} - Returns true if the key exists in the array, otherwise returns false.
  */
 function keyExists(array: Array<string>, key: string = ''): boolean {
-  if (key && array.find((k) => k.includes(`${key}`))) {
+  if (key && array.find((k) => k.includes(`'${key}'`))) {
     vscode.window.showInformationMessage(`'${key}' already exists !`);
 
     return true;
