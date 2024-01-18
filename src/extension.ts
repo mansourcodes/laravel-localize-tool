@@ -178,7 +178,7 @@ function readFileContent(localizeFilePath: string): Array<string> {
     }
 
     const arrayContent = resourceContent
-      .substring(resourceContent.indexOf('[') + 1, resourceContent.indexOf(']'))
+      .substring(resourceContent.indexOf('[') + 1, resourceContent.lastIndexOf(']'))
       .split(',');
 
     return arrayContent;
